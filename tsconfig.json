@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "strict": true,
+    "incremental": true,
+    "target": "ES5",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "DOM",
+      "ES2022"
+    ],
+    "sourceMap": true,
+    "outDir": "build",
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "downlevelIteration": true,
+    "declaration": true,
+    "jsx": "preserve",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": "./"
+  },
+  "paths": {
+    "@appmana-public/auth-proxy-common": [
+      "./auth-proxy-common/src/index.ts"
+    ],
+    "@appmana-public/auth-proxy-common/*": [
+      "./auth-proxy-common/src/*"
+    ]
+  },
+  "references": [
+    {
+      "path": "./auth-proxy-frontend"
+    },
+    {
+      "path": "./auth-proxy-backend"
+    },
+    {
+      "path": "./auth-proxy-integration-tests"
+    }
+  ]
+}
