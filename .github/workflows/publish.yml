@@ -23,11 +23,11 @@ jobs:
 
       - name: Build Frontend
         run: |
-          yarn workspace @appmana/auth-proxy-frontend build
-          yarn workspace @appmana/auth-proxy-frontend bundle
+          yarn workspace @appmana-public/auth-proxy-frontend build
+          yarn workspace @appmana-public/auth-proxy-frontend bundle
 
       - name: Build Backend
-        run: yarn workspace @appmana/auth-proxy-backend build
+        run: yarn workspace @appmana-public/auth-proxy-backend build
 
       - name: Publish Packages
         run: |

@@ -10,7 +10,7 @@ import { createAuthorizePolicy, AuthorizeConfig } from './policies/authorize.js'
 
 export type { PolicyContext, PolicyResult, PolicyFunction };
 import jwt from 'jsonwebtoken';
-import { OAuth2ProxyCipher, parseCookies, joinCookieValues, getRoles, getGroups, hasRole, hasGroup } from '@appmana/auth-proxy-common';
+import { OAuth2ProxyCipher, parseCookies, joinCookieValues, getRoles, getGroups, hasRole, hasGroup } from '@appmana-public/auth-proxy-common';
 import path from 'path';
 import fs from 'fs';
 import { verifyWithDiscovery } from './jwks.js';
