@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-workload
+  labels:
+    app: app-workload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-workload
+  template:
+    metadata:
+      labels:
+        app: app-workload
+    spec:
+      containers:
+        # 1. Main Application (SPA served by Nginx)
+        # Listens on localhost:80 (container port 80)
+        - name: app-spa
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+        
+        # 2. OAuth2 Proxy (Sidecar)
+        # Protects the SPA. Handles Login/Logout.
+        # Listens on 0.0.0.0:4180
+        # Upstream: http://localhost:80 (The SPA)
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.4.0
+          ports:
+            - containerPort: 4180
+          env:
+            - name: OAUTH2_PROXY_HTTP_ADDRESS
+              value: "0.0.0.0:4180"
+            - name: OAUTH2_PROXY_UPSTREAMS
+              value: "http://localhost:80"
+            - name: OAUTH2_PROXY_PROVIDER
+              value: "oidc"
+            - name: OAUTH2_PROXY_CLIENT_ID
+              value: "test-client"
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              value: "secret" # Replace with actual secret
+            - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+              value: "http://keycloak/realms/test-realm" # Internal DNS to Keycloak
+            - name: OAUTH2_PROXY_EMAIL_DOMAINS
+              value: "*"
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              value: "1234567890123456" # Must match auth-proxy
+            - name: OAUTH2_PROXY_COOKIE_SECURE
+              value: "false" # For demo/local
+            - name: OAUTH2_PROXY_SKIP_PROVIDER_BUTTON
+              value: "true"
+            - name: OAUTH2_PROXY_SET_AUTHORIZATION_HEADER
+              value: "true"
+        
+        # 3. AppMana Auth Proxy (Sidecar)
+        # Proxies API requests. Validates cookies/tokens.
+        # Listens on 0.0.0.0:3000
+        - name: auth-proxy
+          image: ghcr.io/appmana-public/auth-proxy-backend:latest
+          ports:
+            - containerPort: 3000
+          args:
+            - "--authorize"
+            - '{"issuer": "http://keycloak/realms/test-realm", "audience": "test-client", "domains": ["api.external.com"]}'
+            - "--allowed-domains"
+            - "api.external.com"
+          env:
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              value: "1234567890123456" # Must match oauth2-proxy
+            - name: BACKEND_API_KEY
+              value: "my-secret-api-key"
+            - name: JWKS_CACHE_DURATION_MS
+              value: "3600000"
+
+      volumes:
+        - name: html-volume
+          configMap:
+            name: spa-html
+
+---
+# Dummy SPA HTML ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spa-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <h1>K8s Sidecar SPA</h1>
+    <script type="module">
+        import { configureAuthProxy } from 'https://unpkg.com/@appmana-public/auth-proxy-frontend/dist/auth-proxy.global.js';
+        
+        // Point to the Ingress path for the Auth Proxy
+        configureAuthProxy({
+            domains: ['api.external.com'],
+            proxyUrl: window.location.origin + '/auth-proxy' 
+        });
+      </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+spec:
+  selector:
+    app: app-workload
+  ports:
+    - name: http-spa
+      port: 80
+      targetPort: 4180 # Traffic hits OAuth2 Proxy first
+    - name: http-auth-proxy
+      port: 3000
+      targetPort: 3000 # Direct traffic to Auth Proxy
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    # Use NGINX Inc. Ingress Controller class
+    kubernetes.io/ingress.class: "nginx"
+    # Rewrite /auth-proxy/(.*) to /$1 before forwarding to the backend
+    nginx.org/rewrites: "serviceName=app-service rewrite=/auth-proxy/(.*) /$1 break;"
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          # Route /auth-proxy/ to Auth Proxy Backend (Port 3000)
+          - path: /auth-proxy/
+            pathType: Prefix
+            backend:
+              service:
+                name: app-service
+                port:
+                  number: 3000
+          
+          # Route everything else to OAuth2 Proxy (Port 80)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-service
+                port:
+                  number: 80
