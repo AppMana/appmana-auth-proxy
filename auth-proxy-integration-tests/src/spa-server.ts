@@ -119,7 +119,7 @@ const start = async () => {
     // const frontendPath = path.resolve(rootDir, 'node_modules/@appmana-public/auth-proxy-frontend/dist');
 
     fastify.get('/frontend/index.js', async (request, reply) => {
-        const content = fs.readFileSync(path.resolve(frontendPath, 'index.js'), 'utf8');
+        const content = fs.readFileSync(path.resolve(frontendPath, 'auth-proxy.global.js'), 'utf8');
         reply.type('application/javascript').send(content);
     });
 
