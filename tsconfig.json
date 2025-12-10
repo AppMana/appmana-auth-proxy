@@ -6,10 +6,7 @@
     "target": "ES5",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": [
-      "DOM",
-      "ES2022"
-    ],
+    "lib": ["DOM", "ES2022"],
     "sourceMap": true,
     "outDir": "build",
     "noImplicitAny": false,
@@ -26,12 +23,8 @@
     "isolatedModules": true,
     "baseUrl": "./",
     "paths": {
-      "@appmana-public/auth-proxy-common": [
-        "./auth-proxy-common/src/index.ts"
-      ],
-      "@appmana-public/auth-proxy-common/*": [
-        "./auth-proxy-common/src/*"
-      ]
+      "@appmana-public/auth-proxy-common": ["./auth-proxy-common/src/index.ts"],
+      "@appmana-public/auth-proxy-common/*": ["./auth-proxy-common/src/*"]
     }
   },
   "references": [

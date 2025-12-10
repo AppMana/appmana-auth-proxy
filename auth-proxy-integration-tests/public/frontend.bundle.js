@@ -13,7 +13,7 @@ var documentRef = result.document;
 var UPLOAD_EVENTS = ["load", "loadend", "loadstart"];
 var COMMON_EVENTS = ["progress", "abort", "error", "timeout"];
 var depricatedProp = (p) => ["returnValue", "totalSize", "position"].includes(p);
-var mergeObjects = function(src, dst) {
+var mergeObjects = function (src, dst) {
   for (let k in src) {
     if (depricatedProp(k)) {
       continue;
@@ -21,30 +21,30 @@ var mergeObjects = function(src, dst) {
     const v = src[k];
     try {
       dst[k] = v;
-    } catch (error) {
-    }
+    } catch (error) {}
   }
   return dst;
 };
-var proxyEvents = function(events, src, dst) {
-  const p = (event) => function(e) {
-    const clone = {};
-    for (let k in e) {
-      if (depricatedProp(k)) {
-        continue;
+var proxyEvents = function (events, src, dst) {
+  const p = (event) =>
+    function (e) {
+      const clone = {};
+      for (let k in e) {
+        if (depricatedProp(k)) {
+          continue;
+        }
+        const val = e[k];
+        clone[k] = val === src ? dst : val;
       }
-      const val = e[k];
-      clone[k] = val === src ? dst : val;
-    }
-    return dst.dispatchEvent(event, clone);
-  };
+      return dst.dispatchEvent(event, clone);
+    };
   for (let event of Array.from(events)) {
     if (dst._has(event)) {
       src[`on${event}`] = p(event);
     }
   }
 };
-var fakeEvent = function(type) {
+var fakeEvent = function (type) {
   if (documentRef && documentRef.createEventObject != null) {
     const msieEventObject = documentRef.createEventObject();
     msieEventObject.type = type;
@@ -56,11 +56,11 @@ var fakeEvent = function(type) {
     return { type };
   }
 };
-var EventEmitter = function(nodeStyle) {
+var EventEmitter = function (nodeStyle) {
   let events = {};
   const listeners = (event) => events[event] || [];
   const emitter = {};
-  emitter.addEventListener = function(event, callback, i) {
+  emitter.addEventListener = function (event, callback, i) {
     events[event] = listeners(event);
     if (events[event].indexOf(callback) >= 0) {
       return;
@@ -68,7 +68,7 @@ var EventEmitter = function(nodeStyle) {
     i = i === void 0 ? events[event].length : i;
     events[event].splice(i, 0, callback);
   };
-  emitter.removeEventListener = function(event, callback) {
+  emitter.removeEventListener = function (event, callback) {
     if (event === void 0) {
       events = {};
       return;
@@ -82,14 +82,14 @@ var EventEmitter = function(nodeStyle) {
     }
     listeners(event).splice(i, 1);
   };
-  emitter.dispatchEvent = function() {
+  emitter.dispatchEvent = function () {
     const args = slice(arguments);
     const event = args.shift();
     if (!nodeStyle) {
       args[0] = mergeObjects(args[0], fakeEvent(event));
       Object.defineProperty(args[0], "target", {
         writable: false,
-        value: this
+        value: this,
       });
     }
     const legacylistener = emitter[`on${event}`];
@@ -108,26 +108,26 @@ var EventEmitter = function(nodeStyle) {
     emitter.on = emitter.addEventListener;
     emitter.off = emitter.removeEventListener;
     emitter.fire = emitter.dispatchEvent;
-    emitter.once = function(e, fn) {
-      var fire = function() {
+    emitter.once = function (e, fn) {
+      var fire = function () {
         emitter.off(e, fire);
         return fn.apply(null, arguments);
       };
       return emitter.on(e, fire);
     };
-    emitter.destroy = () => events = {};
+    emitter.destroy = () => (events = {});
   }
   return emitter;
 };
 var CRLF = "\r\n";
-var objectToString = function(headersObj) {
+var objectToString = function (headersObj) {
   const entries = Object.entries(headersObj);
   const headers2 = entries.map(([name, value]) => {
     return `${name.toLowerCase()}: ${value}`;
   });
   return headers2.join(CRLF);
 };
-var stringToObject = function(headersString, dest) {
+var stringToObject = function (headersString, dest) {
   const headers2 = headersString.split(CRLF);
   if (dest == null) {
     dest = {};
@@ -143,7 +143,7 @@ var stringToObject = function(headersString, dest) {
   }
   return dest;
 };
-var convert = function(headers2, dest) {
+var convert = function (headers2, dest) {
   switch (typeof headers2) {
     case "object": {
       return objectToString(headers2);
@@ -156,9 +156,9 @@ var convert = function(headers2, dest) {
 };
 var headers = { convert };
 var hooks = EventEmitter(true);
-var nullify = (res) => res === void 0 ? null : res;
+var nullify = (res) => (res === void 0 ? null : res);
 var Native$1 = windowRef.XMLHttpRequest;
-var Xhook$1 = function() {
+var Xhook$1 = function () {
   const ABORTED = -1;
   const xhr = new Native$1();
   const request = {};
@@ -167,7 +167,7 @@ var Xhook$1 = function() {
   let transiting = void 0;
   let response = void 0;
   var currentState = 0;
-  const readHead = function() {
+  const readHead = function () {
     response.status = status || xhr.status;
     if (status !== ABORTED) {
       response.statusText = xhr.statusText;
@@ -184,14 +184,13 @@ var Xhook$1 = function() {
       return;
     }
   };
-  const readBody = function() {
+  const readBody = function () {
     if (!xhr.responseType || xhr.responseType === "text") {
       response.text = xhr.responseText;
       response.data = xhr.responseText;
       try {
         response.xml = xhr.responseXML;
-      } catch (error) {
-      }
+      } catch (error) {}
     } else if (xhr.responseType === "document") {
       response.xml = xhr.responseXML;
       response.data = xhr.responseXML;
@@ -202,11 +201,11 @@ var Xhook$1 = function() {
       response.finalUrl = xhr.responseURL;
     }
   };
-  const writeHead = function() {
+  const writeHead = function () {
     facade.status = response.status;
     facade.statusText = response.statusText;
   };
-  const writeBody = function() {
+  const writeBody = function () {
     if ("text" in response) {
       facade.responseText = response.text;
     }
@@ -220,7 +219,7 @@ var Xhook$1 = function() {
       facade.responseURL = response.finalUrl;
     }
   };
-  const emitFinal = function() {
+  const emitFinal = function () {
     if (!hasError) {
       facade.dispatchEvent("load", {});
     }
@@ -229,7 +228,7 @@ var Xhook$1 = function() {
       facade.readyState = 0;
     }
   };
-  const emitReadyState = function(n) {
+  const emitReadyState = function (n) {
     while (n > currentState && currentState < 4) {
       facade.readyState = ++currentState;
       if (currentState === 1) {
@@ -252,13 +251,13 @@ var Xhook$1 = function() {
       }
     }
   };
-  const setReadyState = function(n) {
+  const setReadyState = function (n) {
     if (n !== 4) {
       emitReadyState(n);
       return;
     }
     const afterHooks = hooks.listeners("after");
-    var process = function() {
+    var process = function () {
       if (afterHooks.length > 0) {
         const hook = afterHooks.shift();
         if (hook.length === 2) {
@@ -278,13 +277,12 @@ var Xhook$1 = function() {
   };
   var facade = EventEmitter();
   request.xhr = facade;
-  xhr.onreadystatechange = function(event) {
+  xhr.onreadystatechange = function (event) {
     try {
       if (xhr.readyState === 2) {
         readHead();
       }
-    } catch (error) {
-    }
+    } catch (error) {}
     if (xhr.readyState === 4) {
       transiting = false;
       readHead();
@@ -292,13 +290,13 @@ var Xhook$1 = function() {
     }
     setReadyState(xhr.readyState);
   };
-  const hasErrorHandler = function() {
+  const hasErrorHandler = function () {
     hasError = true;
   };
   facade.addEventListener("error", hasErrorHandler);
   facade.addEventListener("timeout", hasErrorHandler);
   facade.addEventListener("abort", hasErrorHandler);
-  facade.addEventListener("progress", function(event) {
+  facade.addEventListener("progress", function (event) {
     if (currentState < 3) {
       setReadyState(3);
     } else if (xhr.readyState <= 3) {
@@ -312,7 +310,7 @@ var Xhook$1 = function() {
   for (let event of Array.from(COMMON_EVENTS.concat(UPLOAD_EVENTS))) {
     facade[`on${event}`] = null;
   }
-  facade.open = function(method, url, async, user, pass) {
+  facade.open = function (method, url, async, user, pass) {
     currentState = 0;
     hasError = false;
     transiting = false;
@@ -328,7 +326,7 @@ var Xhook$1 = function() {
     response.headers = {};
     setReadyState(1);
   };
-  facade.send = function(body) {
+  facade.send = function (body) {
     let k, modk;
     for (k of ["type", "timeout", "withCredentials"]) {
       modk = k === "type" ? "responseType" : k;
@@ -337,23 +335,13 @@ var Xhook$1 = function() {
       }
     }
     request.body = body;
-    const send = function() {
+    const send = function () {
       proxyEvents(COMMON_EVENTS, xhr, facade);
       if (facade.upload) {
-        proxyEvents(
-          COMMON_EVENTS.concat(UPLOAD_EVENTS),
-          xhr.upload,
-          facade.upload
-        );
+        proxyEvents(COMMON_EVENTS.concat(UPLOAD_EVENTS), xhr.upload, facade.upload);
       }
       transiting = true;
-      xhr.open(
-        request.method,
-        request.url,
-        request.async,
-        request.user,
-        request.pass
-      );
+      xhr.open(request.method, request.url, request.async, request.user, request.pass);
       for (k of ["type", "timeout", "withCredentials"]) {
         modk = k === "type" ? "responseType" : k;
         if (k in request) {
@@ -369,12 +357,15 @@ var Xhook$1 = function() {
       xhr.send(request.body);
     };
     const beforeHooks = hooks.listeners("before");
-    var process = function() {
+    var process = function () {
       if (!beforeHooks.length) {
         return send();
       }
-      const done = function(userResponse) {
-        if (typeof userResponse === "object" && (typeof userResponse.status === "number" || typeof response.status === "number")) {
+      const done = function (userResponse) {
+        if (
+          typeof userResponse === "object" &&
+          (typeof userResponse.status === "number" || typeof response.status === "number")
+        ) {
           mergeObjects(userResponse, response);
           if (!("data" in userResponse)) {
             userResponse.data = userResponse.response || userResponse.text;
@@ -384,11 +375,11 @@ var Xhook$1 = function() {
         }
         process();
       };
-      done.head = function(userResponse) {
+      done.head = function (userResponse) {
         mergeObjects(userResponse, response);
         setReadyState(2);
       };
-      done.progress = function(userResponse) {
+      done.progress = function (userResponse) {
         mergeObjects(userResponse, response);
         setReadyState(3);
       };
@@ -404,7 +395,7 @@ var Xhook$1 = function() {
     };
     process();
   };
-  facade.abort = function() {
+  facade.abort = function () {
     status = ABORTED;
     if (transiting) {
       xhr.abort();
@@ -412,9 +403,9 @@ var Xhook$1 = function() {
       facade.dispatchEvent("abort", {});
     }
   };
-  facade.setRequestHeader = function(header, value) {
+  facade.setRequestHeader = function (header, value) {
     const lName = header != null ? header.toLowerCase() : void 0;
-    const name = request.headerNames[lName] = request.headerNames[lName] || header;
+    const name = (request.headerNames[lName] = request.headerNames[lName] || header);
     if (request.headers[name]) {
       value = request.headers[name] + ", " + value;
     }
@@ -423,7 +414,7 @@ var Xhook$1 = function() {
   facade.getResponseHeader = (header) => nullify(response.headers[header ? header.toLowerCase() : void 0]);
   facade.getAllResponseHeaders = () => nullify(headers.convert(response.headers));
   if (xhr.overrideMimeType) {
-    facade.overrideMimeType = function() {
+    facade.overrideMimeType = function () {
       xhr.overrideMimeType.apply(xhr, arguments);
     };
   }
@@ -461,26 +452,26 @@ var XMLHttpRequest = {
     }
   },
   Native: Native$1,
-  Xhook: Xhook$1
+  Xhook: Xhook$1,
 };
 function __rest(s, e) {
   var t = {};
-  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-    t[p] = s[p];
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
   if (s != null && typeof Object.getOwnPropertySymbols === "function")
     for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-        t[p[i]] = s[p[i]];
+      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
     }
   return t;
 }
 function __awaiter(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve) {
-      resolve(value);
-    });
+    return value instanceof P
+      ? value
+      : new P(function (resolve) {
+          resolve(value);
+        });
   }
-  return new (P || (P = Promise))(function(resolve, reject) {
+  return new (P || (P = Promise))(function (resolve, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -516,10 +507,10 @@ function copyToObjFromRequest(req) {
     "integrity",
     "keepalive",
     "signal",
-    "url"
+    "url",
   ];
   let copyedObj = {};
-  copyedKeys.forEach((key) => copyedObj[key] = req[key]);
+  copyedKeys.forEach((key) => (copyedObj[key] = req[key]));
   return copyedObj;
 }
 function covertHeaderToPlainObj(headers2) {
@@ -537,20 +528,26 @@ function covertTDAarryToObj(input) {
     return prev;
   }, {});
 }
-var Xhook = function(input, init = { headers: {} }) {
+var Xhook = function (input, init = { headers: {} }) {
   let options = Object.assign(Object.assign({}, init), { isFetch: true });
   if (input instanceof Request) {
     const requestObj = copyToObjFromRequest(input);
-    const prevHeaders = Object.assign(Object.assign({}, covertHeaderToPlainObj(requestObj.headers)), covertHeaderToPlainObj(options.headers));
-    options = Object.assign(Object.assign(Object.assign({}, requestObj), init), { headers: prevHeaders, acceptedRequest: true });
+    const prevHeaders = Object.assign(
+      Object.assign({}, covertHeaderToPlainObj(requestObj.headers)),
+      covertHeaderToPlainObj(options.headers),
+    );
+    options = Object.assign(Object.assign(Object.assign({}, requestObj), init), {
+      headers: prevHeaders,
+      acceptedRequest: true,
+    });
   } else {
     options.url = input;
   }
   const beforeHooks = hooks.listeners("before");
   const afterHooks = hooks.listeners("after");
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     let fullfiled = resolve;
-    const processAfter = function(response) {
+    const processAfter = function (response) {
       if (!afterHooks.length) {
         return fullfiled(response);
       }
@@ -564,7 +561,7 @@ var Xhook = function(input, init = { headers: {} }) {
         return processAfter(response);
       }
     };
-    const done = function(userResponse) {
+    const done = function (userResponse) {
       if (userResponse !== void 0) {
         const response = new Response(userResponse.body || userResponse.text, userResponse);
         resolve(response);
@@ -573,7 +570,7 @@ var Xhook = function(input, init = { headers: {} }) {
       }
       processBefore();
     };
-    const processBefore = function() {
+    const processBefore = function () {
       if (!beforeHooks.length) {
         send();
         return;
@@ -585,17 +582,21 @@ var Xhook = function(input, init = { headers: {} }) {
         return hook(options, done);
       }
     };
-    const send = () => __awaiter(this, void 0, void 0, function* () {
-      const { url, isFetch, acceptedRequest } = options, restInit = __rest(options, ["url", "isFetch", "acceptedRequest"]);
-      if (input instanceof Request && restInit.body instanceof ReadableStream) {
-        restInit.body = yield new Response(restInit.body).text();
-      }
-      return Native(url, restInit).then((response) => processAfter(response)).catch(function(err) {
-        fullfiled = reject;
-        processAfter(err);
-        return reject(err);
+    const send = () =>
+      __awaiter(this, void 0, void 0, function* () {
+        const { url, isFetch, acceptedRequest } = options,
+          restInit = __rest(options, ["url", "isFetch", "acceptedRequest"]);
+        if (input instanceof Request && restInit.body instanceof ReadableStream) {
+          restInit.body = yield new Response(restInit.body).text();
+        }
+        return Native(url, restInit)
+          .then((response) => processAfter(response))
+          .catch(function (err) {
+            fullfiled = reject;
+            processAfter(err);
+            return reject(err);
+          });
       });
-    });
     processBefore();
   });
 };
@@ -611,27 +612,27 @@ var fetch = {
     }
   },
   Native,
-  Xhook
+  Xhook,
 };
 var xhook = hooks;
 xhook.EventEmitter = EventEmitter;
-xhook.before = function(handler, i) {
+xhook.before = function (handler, i) {
   if (handler.length < 1 || handler.length > 2) {
     throw "invalid hook";
   }
   return xhook.on("before", handler, i);
 };
-xhook.after = function(handler, i) {
+xhook.after = function (handler, i) {
   if (handler.length < 2 || handler.length > 3) {
     throw "invalid hook";
   }
   return xhook.on("after", handler, i);
 };
-xhook.enable = function() {
+xhook.enable = function () {
   XMLHttpRequest.patch();
   fetch.patch();
 };
-xhook.disable = function() {
+xhook.disable = function () {
   XMLHttpRequest.unpatch();
   fetch.unpatch();
 };
@@ -651,7 +652,7 @@ function configureAuthProxy(userConfig) {
   console.log("Configuring Auth Proxy", userConfig);
   config = {
     ...userConfig,
-    getAuthToken: userConfig.getAuthToken || defaultGetAuthToken
+    getAuthToken: userConfig.getAuthToken || defaultGetAuthToken,
   };
   enableInterception();
 }
@@ -660,7 +661,8 @@ function shouldProxy(url) {
   try {
     const parsedUrl = new URL(url, window.location.origin);
     return config.domains.some(
-      (domain) => parsedUrl.host === domain || parsedUrl.hostname === domain || parsedUrl.hostname.endsWith("." + domain)
+      (domain) =>
+        parsedUrl.host === domain || parsedUrl.hostname === domain || parsedUrl.hostname.endsWith("." + domain),
     );
   } catch (e) {
     return false;
@@ -668,7 +670,7 @@ function shouldProxy(url) {
 }
 function enableInterception() {
   if (!config) return;
-  xhook.before(async function(request, callback) {
+  xhook.before(async function (request, callback) {
     if (shouldProxy(request.url)) {
       const originalUrl = request.url;
       request.url = config.proxyUrl;
@@ -682,7 +684,7 @@ function enableInterception() {
     callback();
   });
   const originalFetch = window.fetch;
-  window.fetch = async function(input, init) {
+  window.fetch = async function (input, init) {
     let url = input instanceof Request ? input.url : input.toString();
     if (shouldProxy(url)) {
       const originalUrl = url;
@@ -696,7 +698,7 @@ function enableInterception() {
       const newInit = {
         ...init,
         headers: headers2,
-        credentials: "include"
+        credentials: "include",
       };
       if (input instanceof Request) {
         return originalFetch(url, newInit);
@@ -706,6 +708,4 @@ function enableInterception() {
     return originalFetch(input, init);
   };
 }
-export {
-  configureAuthProxy
-};
+export { configureAuthProxy };

@@ -1,25 +1,25 @@
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const fastify = Fastify({
-    logger: true,
+  logger: true,
 });
 
 fastify.register(cors, {
-    origin: true,
-    credentials: true,
+  origin: true,
+  credentials: true,
 });
 
 // We need to serve the frontend package as well, or bundle it.
 // For simplicity, we'll assume the frontend package is built and we can serve it.
 // But browsers can't import bare modules without import maps or bundling.
-// Let's create a simple HTML that uses ES modules and import maps if needed, 
+// Let's create a simple HTML that uses ES modules and import maps if needed,
 // or just serve the built frontend file if it's a bundle.
 // The frontend package `main` points to `src/index.ts` (which is TS).
 // We should use the built version `build/index.js`.
@@ -89,9 +89,9 @@ const spaHtml = (proxyPort: number) => `
 </html>
 `;
 
-fastify.get('/', async (request, reply) => {
-    const proxyPort = parseInt(process.env.PROXY_PORT || '3000', 10);
-    reply.type('text/html').send(spaHtml(proxyPort));
+fastify.get("/", async (request, reply) => {
+  const proxyPort = parseInt(process.env.PROXY_PORT || "3000", 10);
+  reply.type("text/html").send(spaHtml(proxyPort));
 });
 
 // Serve frontend files
@@ -111,33 +111,33 @@ fastify.get('/', async (request, reply) => {
 // The user said "there should be a frontend typescript package. when imported via esm or script, whatever is easiest".
 // Let's create a bundle for the frontend package using `esbuild` as a prep step.
 
-import { build } from 'esbuild';
+import { build } from "esbuild";
 
 const start = async () => {
-    // Ensure public directory exists
-    const publicDir = path.resolve(__dirname, '../public');
-    if (!fs.existsSync(publicDir)) {
-        fs.mkdirSync(publicDir, { recursive: true });
-    }
+  // Ensure public directory exists
+  const publicDir = path.resolve(__dirname, "../public");
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
 
-    // Serve the auth-proxy-frontend directly from node_modules for testing
-    const frontendPath = path.resolve(__dirname, '../../auth-proxy-frontend/dist'); // Local build
-    // Or if checking installed node_modules:
-    // const frontendPath = path.resolve(rootDir, 'node_modules/@appmana-public/auth-proxy-frontend/dist');
+  // Serve the auth-proxy-frontend directly from node_modules for testing
+  const frontendPath = path.resolve(__dirname, "../../auth-proxy-frontend/dist"); // Local build
+  // Or if checking installed node_modules:
+  // const frontendPath = path.resolve(rootDir, 'node_modules/@appmana-public/auth-proxy-frontend/dist');
 
-    fastify.get('/frontend/index.js', async (request, reply) => {
-        const content = fs.readFileSync(path.resolve(frontendPath, 'auth-proxy.global.js'), 'utf8');
-        reply.type('application/javascript').send(content);
-    });
+  fastify.get("/frontend/index.js", async (request, reply) => {
+    const content = fs.readFileSync(path.resolve(frontendPath, "auth-proxy.global.js"), "utf8");
+    reply.type("application/javascript").send(content);
+  });
 
-    const port = parseInt(process.env.PORT || '8080', 10);
-    try {
-        await fastify.listen({ port, host: '0.0.0.0' });
-        console.log(`SPA Server listening on ${port}`);
-    } catch (err) {
-        fastify.log.error(err);
-        process.exit(1);
-    }
+  const port = parseInt(process.env.PORT || "8080", 10);
+  try {
+    await fastify.listen({ port, host: "0.0.0.0" });
+    console.log(`SPA Server listening on ${port}`);
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
 };
 
 start();

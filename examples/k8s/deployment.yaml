@@ -24,7 +24,7 @@ spec:
           volumeMounts:
             - name: html-volume
               mountPath: /usr/share/nginx/html
-        
+
         # 2. OAuth2 Proxy (Sidecar)
         # Protects the SPA. Handles Login/Logout.
         # Listens on 0.0.0.0:4180
@@ -56,7 +56,7 @@ spec:
               value: "true"
             - name: OAUTH2_PROXY_SET_AUTHORIZATION_HEADER
               value: "true"
-        
+
         # 3. AppMana Auth Proxy (Sidecar)
         # Proxies API requests. Validates cookies/tokens.
         # Listens on 0.0.0.0:3000
@@ -145,7 +145,7 @@ spec:
                 name: app-service
                 port:
                   number: 3000
-          
+
           # Route everything else to OAuth2 Proxy (Port 80)
           - path: /
             pathType: Prefix

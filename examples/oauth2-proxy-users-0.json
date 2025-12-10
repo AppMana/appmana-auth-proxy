@@ -20,16 +20,9 @@
       ],
       "disableableCredentialTypes": [],
       "requiredActions": [],
-      "realmRoles": [
-        "offline_access",
-        "admin",
-        "uma_authorization"
-      ],
+      "realmRoles": ["offline_access", "admin", "uma_authorization"],
       "clientRoles": {
-        "account": [
-          "view-profile",
-          "manage-account"
-        ]
+        "account": ["view-profile", "manage-account"]
       },
       "notBefore": 0,
       "groups": []

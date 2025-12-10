@@ -1,16 +1,19 @@
 {
-    "name": "appmana-auth-proxy-root",
-    "private": true,
-    "workspaces": [
-        "auth-proxy-frontend",
-        "auth-proxy-backend",
-        "auth-proxy-common",
-        "auth-proxy-integration-tests"
-    ],
-    "packageManager": "yarn@4.10.3",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/appmana/appmana.git",
-        "directory": "appmana-auth-proxy"
-    }
+  "name": "appmana-auth-proxy-root",
+  "private": true,
+  "workspaces": [
+    "auth-proxy-frontend",
+    "auth-proxy-backend",
+    "auth-proxy-common",
+    "auth-proxy-integration-tests"
+  ],
+  "packageManager": "yarn@4.10.3",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appmana/appmana.git",
+    "directory": "appmana-auth-proxy"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4"
+  }
 }

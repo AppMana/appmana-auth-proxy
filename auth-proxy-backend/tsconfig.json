@@ -1,17 +1,15 @@
 {
-    "extends": "../tsconfig.json",
-    "compilerOptions": {
-        "outDir": "build",
-        "baseUrl": "..",
-        "rootDir": "src",
-        "noEmit": false
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "references": [
-        {
-            "path": "../auth-proxy-common"
-        }
-    ]
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "build",
+    "baseUrl": "..",
+    "rootDir": "src",
+    "noEmit": false
+  },
+  "include": ["src/**/*"],
+  "references": [
+    {
+      "path": "../auth-proxy-common"
+    }
+  ]
 }

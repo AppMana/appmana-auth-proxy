@@ -1,18 +1,18 @@
-import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { test, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: "serial" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../../../../');
-const policyPath = path.join(rootDir, 'test-policy-integration.js');
+const rootDir = path.resolve(__dirname, "../../../../");
+const policyPath = path.join(rootDir, "test-policy-integration.js");
 
 test.beforeAll(async () => {
-    // Create initial policy file
-    const policyCode = `
+  // Create initial policy file
+  const policyCode = `
     module.exports = async (context) => {
         console.log('POLICY EVAL: User:', context.user);
         console.log('POLICY EVAL: Headers:', context.request.headers);
@@ -32,71 +32,69 @@ test.beforeAll(async () => {
         return { decision: 'DENY' };
     };
     `;
-    fs.writeFileSync(policyPath, policyCode);
+  fs.writeFileSync(policyPath, policyCode);
 });
 
 test.afterAll(async () => {
-    if (fs.existsSync(policyPath)) {
-        fs.unlinkSync(policyPath);
-    }
+  if (fs.existsSync(policyPath)) {
+    fs.unlinkSync(policyPath);
+  }
 });
 
 test.beforeEach(async ({ page }) => {
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-    page.on('pageerror', err => console.log('PAGE ERROR:', err));
-    page.on('requestfailed', req => console.log('REQUEST FAILED:', req.url(), req.failure()?.errorText));
+  page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
+  page.on("pageerror", (err) => console.log("PAGE ERROR:", err));
+  page.on("requestfailed", (req) => console.log("REQUEST FAILED:", req.url(), req.failure()?.errorText));
 });
 
-
-
 test.beforeAll(async () => {
-    // Create initial policy file
-    // ... (existing code, implied preserved by not replacing it if I target carefully)
-    // Wait, I need to match valid block.
-    // Let's just add timeout in the test body.
+  // Create initial policy file
+  // ... (existing code, implied preserved by not replacing it if I target carefully)
+  // Wait, I need to match valid block.
+  // Let's just add timeout in the test body.
 });
 
 // ...
 
-test('Interception and Proxying (Fetch)', async ({ page }) => {
-    await page.waitForTimeout(2000); // Wait for policy load
-    await page.goto('http://localhost:8080');
+test("Interception and Proxying (Fetch)", async ({ page }) => {
+  await page.waitForTimeout(2000); // Wait for policy load
+  await page.goto("http://localhost:8080");
 
-    await page.click('#btn-fetch');
+  await page.click("#btn-fetch");
 
-    await expect(page.locator('#status')).toContainText('Fetch: {"message":"Success","authorized":true}');
+  await expect(page.locator("#status")).toContainText('Fetch: {"message":"Success","authorized":true}');
 });
 
-test('Interception and Proxying (XHR)', async ({ page }) => {
-    await page.goto('http://localhost:8080');
-    await page.click('#btn-xhr');
-    await expect(page.locator('#status')).toContainText('XHR: {"message":"Success","authorized":true}');
+test("Interception and Proxying (XHR)", async ({ page }) => {
+  await page.goto("http://localhost:8080");
+  await page.click("#btn-xhr");
+  await expect(page.locator("#status")).toContainText('XHR: {"message":"Success","authorized":true}');
 });
 
-test('Non-interception', async ({ page }) => {
-    await page.goto('http://localhost:8080');
+test("Non-interception", async ({ page }) => {
+  await page.goto("http://localhost:8080");
 
-    // We need a button to test non-interception in the SPA
-    // Let's inject a script to test it dynamically
-    const result = await page.evaluate(async () => {
-        try {
-            // Fetch from a domain not in the config (e.g., localhost:8080 itself, or just a relative path)
-            // The config only has 127.0.0.1:9999
-            const res = await fetch('/frontend/index.js');
-            return { status: res.status, url: res.url };
-        } catch (e: any) {
-            return { error: e.message };
-        }
-    });
+  // We need a button to test non-interception in the SPA
+  // Let's inject a script to test it dynamically
+  const result = await page.evaluate(async () => {
+    try {
+      // Fetch from a domain not in the config (e.g., localhost:8080 itself, or just a relative path)
+      // The config only has 127.0.0.1:9999
+      const res = await fetch("/frontend/index.js");
+      return { status: res.status, url: res.url };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
 
-    // Should be 200 and URL should be original (not proxied)
-    expect(result.status).toBe(200);
-    expect(result.url).toContain('http://localhost:8080/frontend/index.js');
+  // Should be 200 and URL should be original (not proxied)
+  expect(result.status).toBe(200);
+  expect(result.url).toContain("http://localhost:8080/frontend/index.js");
 });
 
-test('Policy Matrix & Claims', async ({ page }) => {
-    // Update policy to check for specific claims
-    const policyCode = `
+test("Policy Matrix & Claims", async ({ page }) => {
+  // Update policy to check for specific claims
+  const policyCode = `
     module.exports = async (context) => {
         // Check for a specific claim in the "user" object (decoded token)
         // In our test, we don't have a real token with claims, but we can mock the user object if we had a real token.
@@ -120,88 +118,88 @@ test('Policy Matrix & Claims', async ({ page }) => {
         return { decision: 'DENY' };
     };
     `;
-    fs.writeFileSync(policyPath, policyCode);
+  fs.writeFileSync(policyPath, policyCode);
 
-    await page.waitForTimeout(2000);
-    await page.goto('http://localhost:8080');
+  await page.waitForTimeout(2000);
+  await page.goto("http://localhost:8080");
 
-    // Test Deny (missing role)
-    const resultDeny = await page.evaluate(async () => {
-        try {
-            const res = await fetch('http://127.0.0.1:9999/api/test');
-            return { status: res.status };
-        } catch (e: any) {
-            return { error: e.message };
-        }
-    });
-    // Expect 403 (Forbidden)
-    // Note: fetch doesn't throw on 403, so resultDeny.status should be 403.
-    // But wait, the proxy returns 403.
-    expect(resultDeny.status).toBe(403);
+  // Test Deny (missing role)
+  const resultDeny = await page.evaluate(async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:9999/api/test");
+      return { status: res.status };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
+  // Expect 403 (Forbidden)
+  // Note: fetch doesn't throw on 403, so resultDeny.status should be 403.
+  // But wait, the proxy returns 403.
+  expect(resultDeny.status).toBe(403);
 
-    // Test Allow (with role)
-    const resultAllow = await page.evaluate(async () => {
-        try {
-            const res = await fetch('http://127.0.0.1:9999/api/test', {
-                headers: { 'X-Test-Role': 'admin' }
-            });
-            const data = await res.json();
-            return { status: res.status, data };
-        } catch (e: any) {
-            return { error: e.message };
-        }
-    });
+  // Test Allow (with role)
+  const resultAllow = await page.evaluate(async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:9999/api/test", {
+        headers: { "X-Test-Role": "admin" },
+      });
+      const data = await res.json();
+      return { status: res.status, data };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
 
-    expect(resultAllow.status).toBe(200);
-    // The dummy backend echoes headers if we ask it to? 
-    // The dummy backend /api/test returns { message: 'Unauthorized', authorized: false } unless Authorization header is REAL_API_KEY.
-    // Our policy didn't inject REAL_API_KEY this time! It injected x-authenticated-role.
-    // So the backend will return Unauthorized (200 OK but body says unauthorized).
-    // We should check if the backend received the header.
-    // Let's use /api/echo endpoint of dummy backend.
+  expect(resultAllow.status).toBe(200);
+  // The dummy backend echoes headers if we ask it to?
+  // The dummy backend /api/test returns { message: 'Unauthorized', authorized: false } unless Authorization header is REAL_API_KEY.
+  // Our policy didn't inject REAL_API_KEY this time! It injected x-authenticated-role.
+  // So the backend will return Unauthorized (200 OK but body says unauthorized).
+  // We should check if the backend received the header.
+  // Let's use /api/echo endpoint of dummy backend.
 
-    const resultEcho = await page.evaluate(async () => {
-        try {
-            const res = await fetch('http://127.0.0.1:9999/api/echo', {
-                headers: { 'X-Test-Role': 'admin' }
-            });
-            const data = await res.json();
-            return { status: res.status, data };
-        } catch (e: any) {
-            return { error: e.message };
-        }
-    });
+  const resultEcho = await page.evaluate(async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:9999/api/echo", {
+        headers: { "X-Test-Role": "admin" },
+      });
+      const data = await res.json();
+      return { status: res.status, data };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
 
-    expect(resultEcho.status).toBe(200);
-    expect(resultEcho.data.headers['x-authenticated-role']).toBe('admin');
+  expect(resultEcho.status).toBe(200);
+  expect(resultEcho.data.headers["x-authenticated-role"]).toBe("admin");
 });
 
-test('Policy Denial', async ({ page }) => {
-    // Update policy to deny
-    const policyCode = `
+test("Policy Denial", async ({ page }) => {
+  // Update policy to deny
+  const policyCode = `
     module.exports = async (context) => {
         return { decision: 'DENY' };
     };
     `;
-    fs.writeFileSync(policyPath, policyCode);
+  fs.writeFileSync(policyPath, policyCode);
 
-    // Wait for reload (chokidar might take a moment)
-    await page.waitForTimeout(2000);
+  // Wait for reload (chokidar might take a moment)
+  await page.waitForTimeout(2000);
 
-    await page.goto('http://localhost:8080');
-    await page.click('#btn-fetch');
+  await page.goto("http://localhost:8080");
+  await page.click("#btn-fetch");
 
-    // Expect 403 Forbidden response.
-    // The SPA catches errors and prints "Fetch Error: ..." or displays the response.
-    // Our SPA code:
-    // const res = await fetch(...)
-    // const data = await res.json();
-    // statusDiv.innerText = 'Fetch: ' + JSON.stringify(data);
+  // Expect 403 Forbidden response.
+  // The SPA catches errors and prints "Fetch Error: ..." or displays the response.
+  // Our SPA code:
+  // const res = await fetch(...)
+  // const data = await res.json();
+  // statusDiv.innerText = 'Fetch: ' + JSON.stringify(data);
 
-    // If backend returns 403 with { error: 'Forbidden' }:
-    // Fetch succeeds (no throw).
-    // data = { error: 'Forbidden' }
-    // Text: Fetch: {"error":"Forbidden"}
+  // If backend returns 403 with { error: 'Forbidden' }:
+  // Fetch succeeds (no throw).
+  // data = { error: 'Forbidden' }
+  // Text: Fetch: {"error":"Forbidden"}
 
-    await expect(page.locator('#status')).toContainText('Forbidden');
+  await expect(page.locator("#status")).toContainText("Forbidden");
 });

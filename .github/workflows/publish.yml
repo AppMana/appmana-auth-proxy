@@ -15,9 +15,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
-      
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
@@ -33,7 +33,7 @@ jobs:
         run: |
           # Configure .yarnrc.yml for npm registry authentication if needed, or rely on .npmrc
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          
+
           # Publish all workspaces
           # --no-private: skip private packages
           # --tolerate-republish: don't fail if version already exists
@@ -55,7 +55,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Downcase Repo Name
         run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
