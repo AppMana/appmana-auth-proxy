@@ -19,8 +19,15 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'yarn start:spa',
+      command: 'PROXY_PORT=3000 yarn start:spa',
       port: 8080,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'PORT=8081 PROXY_PORT=3001 yarn start:spa',
+      port: 8081,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -28,6 +35,13 @@ export default defineConfig({
     {
       command: 'yarn start:proxy',
       port: 3000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'OAUTH2_PROXY_COOKIE_SECRET=1234567890123456 BACKEND_API_KEY=REAL_API_KEY yarn start:proxy:integration-keycloak-oauth2-proxy --allowed-domains 127.0.0.1:9999',
+      port: 3001,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       stderr: 'pipe',

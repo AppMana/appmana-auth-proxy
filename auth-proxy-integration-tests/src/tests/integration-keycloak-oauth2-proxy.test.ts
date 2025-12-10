@@ -90,7 +90,7 @@ test.beforeAll(async () => {
         .withNetworkMode('host')
         .withEnvironment({
             OAUTH2_PROXY_HTTP_ADDRESS: '0.0.0.0:' + OAUTH2_PROXY_PORT,
-            OAUTH2_PROXY_UPSTREAMS: 'http://127.0.0.1:8080', // Upstream is SPA directly
+            OAUTH2_PROXY_UPSTREAMS: 'http://127.0.0.1:8081', // Upstream is SPA directly
             OAUTH2_PROXY_PROVIDER: 'oidc',
             OAUTH2_PROXY_CLIENT_ID: kcConfig.clientId,
             OAUTH2_PROXY_CLIENT_SECRET: kcConfig.clientSecret,
@@ -120,7 +120,7 @@ test.afterAll(async () => {
     if (startedOAuth2Proxy) await startedOAuth2Proxy.stop();
     if (startedKeycloak) await startedKeycloak.stop();
 
-    if (fs.existsSync(policyPath)) fs.unlinkSync(policyPath);
+    // if (fs.existsSync(policyPath)) fs.unlinkSync(policyPath);
 });
 
 test('Comprehensive Auth Flow', async ({ page }) => {

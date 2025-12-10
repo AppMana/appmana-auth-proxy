@@ -21,8 +21,8 @@ export default defineConfig({
             stderr: 'pipe',
         },
         {
-            command: 'PORT=8080 yarn start:spa',
-            port: 8080,
+            command: 'PORT=8081 PROXY_PORT=3001 yarn start:spa',
+            port: 8081,
             reuseExistingServer: !process.env.CI,
             stdout: 'pipe',
             stderr: 'pipe',

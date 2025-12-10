@@ -11,7 +11,7 @@
         "start:spa": "ts-node src/spa-server.ts",
         "start:gateway": "ts-node src/upstream-gateway.ts",
         "start:proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --policy ../../test-policy-integration.js --port 3000 --skip-verify",
-        "start:proxy:integration-keycloak-oauth2-proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --port 3001 --upstream http://127.0.0.1:9999 --policy ../auth-proxy-integration-tests/test-policy-keycloak-oauth2-proxy.js"
+        "start:proxy:integration-keycloak-oauth2-proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --port 3001 --upstream http://127.0.0.1:9999 --policy ./test-policy-keycloak-oauth2-proxy.js"
     },
     "devDependencies": {
         "@fastify/cors": "^9.0.1",

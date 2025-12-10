@@ -24,7 +24,7 @@ const fastify = Fastify({
 
 // Let's assume we can use a simple script tag for the test SPA.
 
-const spaHtml = `
+const spaHtml = (proxyPort: number) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,7 +47,7 @@ const spaHtml = `
 
         configureAuthProxy({
             domains: ['127.0.0.1:9999'], // Proxy requests to dummy backend
-            proxyUrl: 'http://localhost:3001', // The proxy server
+            proxyUrl: 'http://localhost:${proxyPort}', // The proxy server
             getAuthToken: () => 'mock-token-from-spa' 
         });
 
@@ -84,7 +84,8 @@ const spaHtml = `
 `;
 
 fastify.get('/', async (request, reply) => {
-    reply.type('text/html').send(spaHtml);
+    const proxyPort = parseInt(process.env.PROXY_PORT || '3000', 10);
+    reply.type('text/html').send(spaHtml(proxyPort));
 });
 
 // Serve frontend files
