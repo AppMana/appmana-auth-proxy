@@ -4,9 +4,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "pretest": "yarn workspace @appmana-public/auth-proxy-backend build && yarn workspace @appmana-public/auth-proxy-frontend bundle",
-        "test": "playwright test -c playwright.integration-keycloak-oauth2-proxy.config.ts",
-        "test:basic": "playwright test -c playwright.config.ts",
+        "build:dependencies": "yarn workspace @appmana-public/auth-proxy-common build && yarn workspace @appmana-public/auth-proxy-backend build && yarn workspace @appmana-public/auth-proxy-frontend bundle",
+        "test": "yarn build:dependencies && playwright test -c playwright.integration-keycloak-oauth2-proxy.config.ts",
+        "test:basic": "yarn build:dependencies && playwright test -c playwright.config.ts",
         "start:dummy": "ts-node src/dummy-backend.ts",
         "start:spa": "ts-node src/spa-server.ts",
         "start:gateway": "ts-node src/upstream-gateway.ts",

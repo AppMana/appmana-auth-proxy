@@ -1,4 +1,13 @@
 {
     "extends": "./tsconfig.json",
-    "compilerOptions": {}
+    "compilerOptions": {
+        "paths": {
+            "@appmana-public/auth-proxy-common": [
+                "./node_modules/@appmana-public/auth-proxy-common"
+            ],
+            "@appmana-public/auth-proxy-common/*": [
+                "./node_modules/@appmana-public/auth-proxy-common/*"
+            ]
+        }
+    }
 }

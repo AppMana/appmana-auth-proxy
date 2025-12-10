@@ -47,7 +47,7 @@ const spaHtml = `
 
         configureAuthProxy({
             domains: ['127.0.0.1:9999'], // Proxy requests to dummy backend
-            proxyUrl: 'http://localhost:3000', // The proxy server
+            proxyUrl: 'http://localhost:3001', // The proxy server
             getAuthToken: () => 'mock-token-from-spa' 
         });
 
