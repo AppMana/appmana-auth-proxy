@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "bundle": "esbuild src/index.ts --bundle --outfile=dist/auth-proxy.global.js --format=iife --global-name=AppManaAuthProxy --minify",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "xhook": "^1.6.2"

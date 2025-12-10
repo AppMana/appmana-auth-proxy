@@ -15,8 +15,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node build/src/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "yarn test:coverage",
-    "test:coverage": "c8 --reporter=text --reporter=html node --test build/tests/"
+    "test": "node --test build/tests/**/*.test.js",
+    "test:coverage": "c8 --reporter=text --reporter=html node --test build/tests/**/*.test.js"
   },
   "dependencies": {
     "@appmana-public/auth-proxy-common": "workspace:*",

@@ -14,7 +14,7 @@
     "directory": "appmana-auth-proxy"
   },
   "scripts": {
-    "test": "yarn workspaces foreach -R -v --include '@appmana-public/auth-proxy-*' run test"
+    "test": "yarn workspaces foreach -A -v --include '@appmana-public/auth-proxy-*' run test"
   },
   "devDependencies": {
     "prettier": "^3.7.4"

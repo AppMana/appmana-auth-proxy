@@ -1,6 +1,7 @@
-import { test, expect } from "@playwright/test";
-import { wellKnownAllBackendsPolicy } from "../policies/well-known-all-backends";
-import { PolicyContext } from "../policy";
+import { test, describe, it, beforeEach, afterEach } from 'node:test';
+import { strict as assert } from 'node:assert';
+import { wellKnownAllBackendsPolicy } from '../policies/well-known-all-backends.js';
+import { PolicyContext } from '../policy.js';
 
 // Mock PolicyContext
 const createMockContext = (url: string, targetUrl: string): PolicyContext => ({
@@ -10,60 +11,76 @@ const createMockContext = (url: string, targetUrl: string): PolicyContext => ({
     headers: {
       "x-proxy-target-url": targetUrl,
     },
-    // Mock other parts if needed
+    raw: { url, headers: {} } as any,
   } as any,
+  user: null,
   utils: {} as any,
 });
 
-test("WellKnownAllBackends: OpenAI Injection", async () => {
-  process.env.OPENAI_API_KEY = "sk-test-key";
+describe("WellKnownAllBackends Policy", () => {
 
-  const context = createMockContext("/v1/chat/completions", "https://api.openai.com");
-  const result = await wellKnownAllBackendsPolicy(context);
+  // Clear env vars after each test
+  afterEach(() => {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
+    delete process.env.AWS_REGION;
+    delete process.env.STRIPE_SECRET_KEY;
+  });
 
-  expect(result.decision).toBe("ALLOW");
-  expect(result.modifiedRequest?.headers?.["Authorization"]).toBe("Bearer sk-test-key");
-});
+  it("should inject OpenAI API Key", async () => {
+    process.env.OPENAI_API_KEY = "sk-test-key";
 
-test("WellKnownAllBackends: Anthropic Injection", async () => {
-  process.env.ANTHROPIC_API_KEY = "sk-ant-test";
+    const context = createMockContext("/v1/chat/completions", "https://api.openai.com");
+    const result = await wellKnownAllBackendsPolicy(context);
 
-  const context = createMockContext("/v1/messages", "https://api.anthropic.com");
-  const result = await wellKnownAllBackendsPolicy(context);
+    assert.equal(result.decision, "ALLOW");
+    assert.equal(result.modifiedRequest?.headers?.["Authorization"], "Bearer sk-test-key");
+  });
 
-  expect(result.decision).toBe("ALLOW");
-  expect(result.modifiedRequest?.headers?.["x-api-key"]).toBe("sk-ant-test");
-});
+  it("should inject Anthropic API Key", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-test";
 
-test("WellKnownAllBackends: AWS injection (SigV4)", async () => {
-  process.env.AWS_ACCESS_KEY_ID = "AKIAFAIL";
-  process.env.AWS_SECRET_ACCESS_KEY = "secret";
-  process.env.AWS_REGION = "us-east-1";
+    const context = createMockContext("/v1/messages", "https://api.anthropic.com");
+    const result = await wellKnownAllBackendsPolicy(context);
 
-  const context = createMockContext("/bucket/key", "https://s3.us-east-1.amazonaws.com");
-  const result = await wellKnownAllBackendsPolicy(context);
+    assert.equal(result.decision, "ALLOW");
+    assert.equal(result.modifiedRequest?.headers?.["x-api-key"], "sk-ant-test");
+  });
 
-  expect(result.decision).toBe("ALLOW");
-  const headers = result.modifiedRequest?.headers || {};
+  it("should inject AWS SigV4 headers", async () => {
+    process.env.AWS_ACCESS_KEY_ID = "AKIAFAIL";
+    process.env.AWS_SECRET_ACCESS_KEY = "secret";
+    process.env.AWS_REGION = "us-east-1";
 
-  expect(headers["Authorization"]).toContain("AWS4-HMAC-SHA256");
-  expect(headers["Authorization"]).toContain("Credential=AKIAFAIL/");
-  expect(headers["x-amz-date"]).toBeDefined();
-  // content-sha256 might vary or be calculated
-});
+    const context = createMockContext("/bucket/key", "https://s3.us-east-1.amazonaws.com");
+    const result = await wellKnownAllBackendsPolicy(context);
 
-test("WellKnownAllBackends: Skip if no match", async () => {
-  const context = createMockContext("/", "https://unknown.com");
-  const result = await wellKnownAllBackendsPolicy(context);
+    assert.equal(result.decision, "ALLOW");
+    const headers = result.modifiedRequest?.headers || {};
 
-  expect(result.decision).toBe("SKIP");
-});
+    const authHeader = headers["Authorization"] || headers["authorization"];
+    assert.ok(authHeader, "Authorization header should exist");
+    assert.match(authHeader as string, /AWS4-HMAC-SHA256/);
+    assert.match(authHeader as string, /Credential=AKIAFAIL\//);
+    assert.ok(headers["x-amz-date"]);
+  });
 
-test("WellKnownAllBackends: Skip/Log if missing env", async () => {
-  delete process.env.STRIPE_SECRET_KEY;
-  const context = createMockContext("/", "https://api.stripe.com");
+  it("should SKIP if no match", async () => {
+    const context = createMockContext("/", "https://unknown.com");
+    const result = await wellKnownAllBackendsPolicy(context);
 
-  // Should skip if keys are missing
-  const result = await wellKnownAllBackendsPolicy(context);
-  expect(result.decision).toBe("SKIP");
+    assert.equal(result.decision, "SKIP");
+  });
+
+  it("should SKIP if missing env var for matched domain", async () => {
+    // Ensure no key
+    delete process.env.STRIPE_SECRET_KEY;
+    const context = createMockContext("/", "https://api.stripe.com");
+
+    // Should skip if keys are missing
+    const result = await wellKnownAllBackendsPolicy(context);
+    assert.equal(result.decision, "SKIP");
+  });
 });

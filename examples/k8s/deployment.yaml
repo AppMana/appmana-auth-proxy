@@ -14,6 +14,8 @@ spec:
       labels:
         app: app-workload
     spec:
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
         # 1. Main Application (SPA served by Nginx)
         # Listens on localhost:80 (container port 80)

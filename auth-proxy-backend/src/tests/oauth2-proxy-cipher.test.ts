@@ -1,7 +1,7 @@
-import { test, expect } from "@playwright/test"; // Using playwright test runner as it's already set up
+import { test, describe, it } from 'node:test';
+import { strict as assert } from 'node:assert';
 import { OAuth2ProxyCipher } from "@appmana-public/auth-proxy-common";
 import * as crypto from "crypto";
-import lz4js from "lz4js";
 
 // Helper to manually encrypt like oauth2-proxy
 function encryptManually(value: string | object, secret: string) {
@@ -27,40 +27,49 @@ function encryptManually(value: string | object, secret: string) {
   return combined.toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-test("OAuth2ProxyCipher should decrypt and parse JSON object", () => {
-  const secret = "1234567890123456"; // 16 bytes
-  const payload = { email: "test@example.com", user: "testuser" };
+describe('OAuth2ProxyCipher', () => {
+  it('should decrypt a cookie value encrypted with the same secret', async () => {
+    const secret = '1234567890123456'; // 16 bytes
+    const cipher = new OAuth2ProxyCipher(secret);
 
-  const encryptedCookie = encryptManually(payload, secret);
+    const payload = { email: "test@example.com", user: "testuser" };
+    const encrypted = encryptManually(payload, secret);
 
-  const cipher = new OAuth2ProxyCipher(secret);
-  const decrypted = cipher.decrypt(encryptedCookie);
+    const decrypted = await cipher.decrypt(encrypted);
 
-  // Since our mock encryption didn't compress with LZ4 or use MsgPack,
-  // and OAuth2ProxyCipher handles decompression/decoding failures gracefully by returning string,
-  // we might get a JSON string back if it failed to detect msgpack/lz4.
-  // Wait, OAuth2ProxyCipher logic try-catches lz4 and msgpack.
-  // If lz4 fails, it uses original buffer.
-  // If msgpack fails, it returns string.
+    let result = decrypted;
+    if (typeof result === "string") {
+      try {
+        result = JSON.parse(result);
+      } catch (e) {
+        // ignore
+      }
+    }
+    assert.deepEqual(result, payload);
+  });
 
-  // So if we encrypted valid JSON string, we expect a JSON string back (since we didn't msgpack encode it).
-  // Let's parse it if it's a string.
+  it('should handle Base64URL encoding', async () => {
+    const secret = "1234567890123456";
+    const payload = "simple-string";
+    const encrypted = encryptManually(payload, secret);
 
-  let result = decrypted;
-  if (typeof result === "string") {
-    result = JSON.parse(result);
-  }
+    const cipher = new OAuth2ProxyCipher(secret);
+    const decrypted = await cipher.decrypt(encrypted);
+    assert.equal(decrypted, payload);
+  });
 
-  expect(result).toEqual(payload);
-});
+  it('should fail to decrypt with wrong secret', async () => {
+    const secret1 = '1234567890123456';
+    const secret2 = '1234567890123457';
+    const cipher1 = new OAuth2ProxyCipher(secret1);
+    const cipher2 = new OAuth2ProxyCipher(secret2);
 
-test("OAuth2ProxyCipher should handle Base64URL encoding", () => {
-  const secret = "1234567890123456";
-  const payload = "simple-string";
-  const encryptedCookie = encryptManually(payload, secret);
+    const text = 'secret data';
+    const encrypted = encryptManually(text, secret1);
 
-  const cipher = new OAuth2ProxyCipher(secret);
-  const decrypted = cipher.decrypt(encryptedCookie);
-
-  expect(decrypted).toBe(payload);
+    // AES-CFB doesn't throw on wrong key, it produces garbage.
+    // We verify that the result is NOT the original text.
+    const decrypted = await cipher2.decrypt(encrypted);
+    assert.notEqual(decrypted, text);
+  });
 });
