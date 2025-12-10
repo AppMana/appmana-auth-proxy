@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,6 +9,11 @@ const __dirname = path.dirname(__filename);
 
 const fastify = Fastify({
     logger: true,
+});
+
+fastify.register(cors, {
+    origin: true,
+    credentials: true,
 });
 
 // We need to serve the frontend package as well, or bundle it.

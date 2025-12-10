@@ -254,7 +254,7 @@ module.exports = async (context) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) return { allow: false };
 
     const token = authHeader.substring(7);
-    const decoded = jwt.decode(token); // Use jwt.verify in production
+    const decoded = jwt.verify(token);
 
     if (decoded && decoded.roles && decoded.roles.includes('admin')) {
          return {
@@ -294,41 +294,43 @@ A complete example with Nginx, OAuth2 Proxy, and Auth Proxy Backend is available
 
 ### Running Tests
  
-  #### Prerequisites
+#### Prerequisites
  
   1.  **Node.js**: v18+
   2.  **Yarn**: v4+ (Berry)
   3.  **Docker**: Required for integration tests (runs Keycloak and OAuth2 Proxy containers).
  
-  #### Unit Tests
+#### Unit Tests
+
+Run unit tests for individual packages:
+
+```bash
+# Backend
+yarn workspace @appmana-public/auth-proxy-backend test
+
+# Frontend
+yarn workspace @appmana-public/auth-proxy-frontend test
+```
  
-  Run unit tests for individual packages:
+#### Integration Tests
  
-  ```bash
-  # Backend
-  yarn workspace @appmana-public/auth-proxy-backend test
- 
-  # Frontend
-  yarn workspace @appmana-public/auth-proxy-frontend test
-  ```
- 
-  #### Integration Tests
- 
-  The integration tests verify the full flow including Keycloak, OAuth2 Proxy, and the Auth Proxy.
- 
+The integration tests verify the full flow including Keycloak, OAuth2 Proxy, and the Auth Proxy.
+
   **Run all integration tests:**
  
-  ```bash
-  yarn workspace @appmana-public/auth-proxy-integration-tests playwright test
-  ```
+   ```bash
+   yarn workspace @appmana-public/auth-proxy-integration-tests test
+   ```
  
-  **Run valid Keycloak Integration Test:**
+   **Run specific suites:**
  
-  To run the full OIDC flow verification (requires Docker):
- 
-  ```bash
-  yarn workspace @appmana-public/auth-proxy-integration-tests playwright test -c playwright.integration-keycloak-oauth2-proxy.config.ts
-  ```
+   ```bash
+   # Run only Keycloak Integration Test (Full OIDC flow)
+   yarn workspace @appmana-public/auth-proxy-integration-tests run test:keycloak
+
+   # Run only Basic tests
+   yarn workspace @appmana-public/auth-proxy-integration-tests run test:basic
+   ```
 
 ### Publishing
 

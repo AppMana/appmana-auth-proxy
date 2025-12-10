@@ -5,8 +5,9 @@
     "type": "module",
     "scripts": {
         "build:dependencies": "yarn workspace @appmana-public/auth-proxy-common build && yarn workspace @appmana-public/auth-proxy-backend build && yarn workspace @appmana-public/auth-proxy-frontend bundle",
-        "test": "yarn build:dependencies && playwright test -c playwright.integration-keycloak-oauth2-proxy.config.ts",
-        "test:basic": "yarn build:dependencies && playwright test -c playwright.config.ts",
+        "test": "yarn build:dependencies && playwright test",
+        "test:basic": "yarn build:dependencies && playwright test --grep-invert 'Keycloak'",
+        "test:keycloak": "yarn build:dependencies && playwright test -c playwright.integration-keycloak-oauth2-proxy.config.ts",
         "start:dummy": "ts-node src/dummy-backend.ts",
         "start:spa": "ts-node src/spa-server.ts",
         "start:gateway": "ts-node src/upstream-gateway.ts",

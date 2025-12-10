@@ -247,8 +247,8 @@ test('Comprehensive Auth Flow', async ({ page }) => {
         // @ts-ignore
         import('/frontend/index.js').then(module => {
             module.configureAuthProxy({
-                // Attempt to access SPA server (not allowed backend) via proxy
-                domains: ['localhost:8080'],
+                // Attempt to access unused port (not allowed backend) via proxy
+                domains: ['localhost:54321'],
                 proxyUrl: authProxyUrl,
             });
         });
@@ -258,17 +258,10 @@ test('Comprehensive Auth Flow', async ({ page }) => {
 
     await page.waitForTimeout(1000);
 
-    // Make a request to the disallowed domain (localhost:8080 starts with http://localhost:8080)
-    // The dummy backend is at 9999. 8080 is the SPA.
-    // We need to trigger a fetch that matches 'localhost:8080'.
-    // The current Test SPA has a hardcoded fetch to /api/test.
-    // If we configure domains: ['localhost:8080'], the interceptor will checking if url includes that.
-    // So we need to fetch 'http://localhost:8080/something'.
-
-    // We'll use page.evaluate to trigger a specific fetch
+    // Make a request to the disallowed domain
     const status = await page.evaluate(async () => {
         try {
-            const res = await fetch('http://localhost:8080/index.html');
+            const res = await fetch('http://localhost:54321/index.html');
             return res.status;
         } catch (e) {
             return 'Fetch Failed';
