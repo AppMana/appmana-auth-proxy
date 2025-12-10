@@ -1,5 +1,5 @@
 {
-  "name": "appmana-auth-proxy-root",
+  "name": "@appmana-public/auth-proxy",
   "private": true,
   "workspaces": [
     "auth-proxy-frontend",
@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/appmana/appmana.git",
     "directory": "appmana-auth-proxy"
+  },
+  "scripts": {
+    "test": "yarn workspaces foreach -R -v --include '@appmana-public/auth-proxy-*' run test"
   },
   "devDependencies": {
     "prettier": "^3.7.4"

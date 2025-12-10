@@ -1,10 +1,16 @@
 {
   "name": "@appmana-public/auth-proxy-common",
-  "version": "1.0.0",
+  "version": "0.0.1-setup.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appmana/appmana-auth-proxy.git",
+    "directory": "auth-proxy-common"
+  },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "echo 'No tests for common'"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.0.0-beta2",

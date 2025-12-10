@@ -1,6 +1,6 @@
 {
   "name": "@appmana-public/auth-proxy-integration-tests",
-  "version": "1.0.0",
+  "version": "0.0.1-setup.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -32,7 +32,7 @@
     "wait-on": "^9.0.3"
   },
   "dependencies": {
-    "@appmana-public/auth-proxy-common": "*",
+    "@appmana-public/auth-proxy-common": "workspace:*",
     "express": "^5.2.1",
     "http-proxy-middleware": "^3.0.5",
     "jose": "^6.1.3"

@@ -2,44 +2,44 @@ name: Publish Packages
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*' # v0.0.1 or v0.0.1-beta.0
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
       packages: write
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           registry-url: "https://registry.npmjs.org"
-
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build Frontend
+        run: yarn install --immutable
+      - name: Build All Workspaces
+        run: yarn workspaces foreach -A -t run build
+      - name: Bundle Frontend
+        run: yarn workspace @appmana-public/auth-proxy-frontend run bundle
+      - name: Publish to npm (Trusted Publishing)
         run: |
-          yarn workspace @appmana-public/auth-proxy-frontend build
-          yarn workspace @appmana-public/auth-proxy-frontend bundle
 
-      - name: Build Backend
-        run: yarn workspace @appmana-public/auth-proxy-backend build
+          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
+            NPM_TAG="next"
+          else
+            NPM_TAG="latest"
+          fi
 
-      - name: Publish Packages
-        run: |
-          # Configure .yarnrc.yml for npm registry authentication if needed, or rely on .npmrc
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-
-          # Publish all workspaces
-          # --no-private: skip private packages
-          # --tolerate-republish: don't fail if version already exists
-          yarn workspaces foreach -A --no-private npm publish --access public --tolerate-republish
+          yarn workspaces foreach -A --no-private npm publish --access public --npm-tag $NPM_TAG --tolerate-republish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          YARN_NPM_PUBLISH_PROVENANCE: "true"
 
   build-docker:
     runs-on: ubuntu-latest
@@ -48,7 +48,8 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -58,6 +59,11 @@ jobs:
 
       - name: Downcase Repo Name
         run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Build Context Setup
+        run: |
+          corepack enable
+          yarn install --immutable
+          yarn workspaces foreach -A -t run build
 
       - name: Build and Push Backend Docker Image
         uses: docker/build-push-action@v4
@@ -67,4 +73,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}/auth-proxy-backend:latest
-            ghcr.io/${{ env.REPO_LOWER }}/auth-proxy-backend:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWER }}/auth-proxy-backend:${{ github.ref_name }}

@@ -1,40 +1,30 @@
-FROM node:18-alpine AS builder
+FROM node:22-trixie AS builder
 
 WORKDIR /app
-
-# Copy root package.json and lockfile (if exists)
-COPY package.json yarn.lock* ./
-# Copy workspace package.jsons
-COPY appmana-auth-proxy/auth-proxy-backend/package.json ./appmana-auth-proxy/auth-proxy-backend/
-COPY appmana-auth-proxy/auth-proxy-frontend/package.json ./appmana-auth-proxy/auth-proxy-frontend/
-COPY appmana-auth-proxy/auth-proxy-integration-tests/package.json ./appmana-auth-proxy/auth-proxy-integration-tests/
-
-# Install dependencies
-RUN yarn install --frozen-lockfile
-
-# Copy source code
 COPY . .
 
-# Build backend
-WORKDIR /app/appmana-auth-proxy/auth-proxy-backend
-RUN yarn build
+ENV YARN_NODE_LINKER=node-modules
+
+RUN corepack enable
+RUN yarn install
+RUN yarn workspace @appmana-public/auth-proxy-backend build
 
 # Production stage
-FROM node:18-alpine
+FROM node:22-trixie
 
 WORKDIR /app
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/yarn.lock ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/appmana-auth-proxy/auth-proxy-backend/package.json ./appmana-auth-proxy/auth-proxy-backend/
-COPY --from=builder /app/appmana-auth-proxy/auth-proxy-backend/build ./appmana-auth-proxy/auth-proxy-backend/build
+COPY --from=builder /app/auth-proxy-backend/package.json ./auth-proxy-backend/
+COPY --from=builder /app/auth-proxy-backend/build ./auth-proxy-backend/build
 
 # Expose port
 EXPOSE 3000
 
 # Set working directory to backend
-WORKDIR /app/appmana-auth-proxy/auth-proxy-backend
+WORKDIR /app/auth-proxy-backend
 
 # Command to run
 # Note: Policy file needs to be mounted or provided
