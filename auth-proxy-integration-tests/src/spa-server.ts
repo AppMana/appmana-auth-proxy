@@ -38,12 +38,12 @@ const spaHtml = `
     <button id="btn-fetch">Test Fetch</button>
     <button id="btn-xhr">Test XHR</button>
     
+    <script src="/frontend/index.js"></script>
     <script type="module">
         // Mock cookie
         document.cookie = "_oauth2_proxy=mock-token; path=/";
 
-        // Import frontend (we will serve this via a route)
-        import { configureAuthProxy } from '/frontend/index.js';
+        const { configureAuthProxy } = window.AppManaAuthProxy;
 
         configureAuthProxy({
             domains: ['127.0.0.1:9999'], // Proxy requests to dummy backend

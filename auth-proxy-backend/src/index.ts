@@ -174,6 +174,8 @@ async function start() {
 
     // Use onRequest to ensure we run before the proxy handler takes over completely.
     fastify.addHook('onRequest', async (request, reply) => {
+        if (request.method === 'OPTIONS') return;
+
         const headerTargetUrl = request.headers['x-proxy-target-url'];
         const upstream = (argv.upstream as string) || '';
 
@@ -244,8 +246,17 @@ async function start() {
 
         if (result.modifiedRequest) {
             if (result.modifiedRequest.headers) {
-                Object.assign(request.headers, result.modifiedRequest.headers);
-                Object.assign(request.raw.headers, result.modifiedRequest.headers);
+                const headers = result.modifiedRequest.headers;
+                for (const [key, value] of Object.entries(headers)) {
+                    const lowerKey = key.toLowerCase();
+                    request.headers[lowerKey] = value as string;
+                    request.raw.headers[lowerKey] = value as string;
+                    // Also remove the original casing if it differs, to avoid duplicates if the proxy is dumb
+                    if (key !== lowerKey) {
+                        delete request.headers[key];
+                        delete request.raw.headers[key];
+                    }
+                }
             }
         }
 
