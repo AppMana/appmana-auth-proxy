@@ -161,8 +161,38 @@ test("Comprehensive Auth Flow", async ({ page }) => {
 
   await page.waitForTimeout(1000);
 
+  // Helper to get last fetch details
+  const getLastFetchDetails = async () => {
+    // Wait for the element to appear
+    await page.waitForSelector("#last-fetch-details", { timeout: 5000 });
+    const details = await page.evaluate(() => {
+      const el = document.getElementById("last-fetch-details");
+      if (!el) return null;
+      const data = JSON.parse(el.innerText);
+      // Clean up for next test
+      el.remove();
+      return data;
+    });
+    return details;
+  };
+
   // 6. Try to fetch API (Unprivileged)
   await page.click("#btn-fetch");
+  // Robust check: Ensure 403, "Forbidden" JSON, and CORS headers
+  const unprivDetails = await getLastFetchDetails();
+  expect(unprivDetails).not.toBeNull();
+  expect(unprivDetails.status).toBe(403);
+  expect(JSON.parse(unprivDetails.body)).toEqual({ error: "Forbidden" });
+  // Check CORS Header (case-insensitive check needed usually, but browser normalized headers are lowercase)
+  // Our SPA runs on 8081, Proxy on 3001. Origin 'http://localhost:8081' should be allowed.
+  // Note: OAuth2Proxy/Backend might filter headers. Auth Proxy Backend explicitly sets CORS.
+  // 'access-control-allow-origin' should be '*' or specific origin.
+  // Ideally 'null' or 'http://localhost:8081".
+  // If 'origin: true' in fastify-cors, it reflects origin.
+  // Let's check strictly if possible, or just existence.
+  expect(unprivDetails.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
+  expect(unprivDetails.headers["access-control-allow-credentials"]).toBe("true");
+
   await expect(page.locator("#status")).toContainText("Forbidden");
 
   // 7. Logout
@@ -200,6 +230,10 @@ test("Comprehensive Auth Flow", async ({ page }) => {
   // 9. Try to fetch API (Privileged)
   await page.click("#btn-fetch");
   await expect(page.locator("#status")).toContainText("Success");
+
+  const privDetails = await getLastFetchDetails();
+  expect(privDetails.status).toBe(200);
+  expect(privDetails.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
 
   // 10. Negative Test: Rogue JWT signed by unknown key
   console.log("Testing Rogue JWT...");
@@ -247,6 +281,12 @@ test("Comprehensive Auth Flow", async ({ page }) => {
   // Try to fetch API
   await page.click("#btn-fetch");
   await expect(page.locator("#status")).toContainText("Forbidden");
+
+  const rogueDetails = await getLastFetchDetails();
+  expect(rogueDetails.status).toBe(403);
+  expect(JSON.parse(rogueDetails.body)).toEqual({ error: "Forbidden" });
+  expect(rogueDetails.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
+
   console.log("Rogue JWT successfully rejected.");
 
   // 11. Negative Test: Unauthorized Proxy Target

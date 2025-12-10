@@ -64,9 +64,24 @@ const spaHtml = (proxyPort: number) => `
                 const res = await fetch('http://127.0.0.1:9999/api/test');
                 console.log('Fetch status:', res.status);
                 const text = await res.text();
+                // Store full details in a hidden element for tests to inspect if needed
+                const details = {
+                    status: res.status,
+                    headers: Object.fromEntries(res.headers.entries()),
+                    body: text
+                };
+                const detailsDiv = document.createElement('div');
+                detailsDiv.id = 'last-fetch-details';
+                detailsDiv.innerText = JSON.stringify(details);
+                document.body.appendChild(detailsDiv);
+
                 console.log('Fetch response:', text);
-                const data = JSON.parse(text);
-                statusDiv.innerText = 'Fetch: ' + JSON.stringify(data);
+                try {
+                    const data = JSON.parse(text);
+                    statusDiv.innerText = 'Fetch: ' + JSON.stringify(data);
+                } catch {
+                     statusDiv.innerText = 'Fetch: ' + text;
+                }
             } catch (e) {
                 console.error('Fetch error:', e);
                 statusDiv.innerText = 'Fetch Error: ' + e.message;
