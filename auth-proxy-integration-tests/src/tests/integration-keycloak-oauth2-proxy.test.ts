@@ -85,7 +85,7 @@ test.beforeAll(async () => {
 
   // 3. Start OAuth2 Proxy
   console.log("Starting OAuth2 Proxy...");
-  oauth2ProxyContainer = new GenericContainer("quay.io/oauth2-proxy/oauth2-proxy:v7.4.0")
+  oauth2ProxyContainer = new GenericContainer("quay.io/oauth2-proxy/oauth2-proxy:v7.6.0")
     .withNetworkMode("host")
     .withEnvironment({
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:" + OAUTH2_PROXY_PORT,
@@ -98,11 +98,12 @@ test.beforeAll(async () => {
       OAUTH2_PROXY_COOKIE_SECRET: "1234567890123456",
       OAUTH2_PROXY_COOKIE_SECURE: "false",
       OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true",
-      OAUTH2_PROXY_SET_AUTHORIZATION_HEADER: "true",
+      OAUTH2_PROXY_SET_AUTHORIZATION_HEADER: "false",
       OAUTH2_PROXY_PASS_ACCESS_TOKEN: "false",
       OAUTH2_PROXY_SET_XAUTHREQUEST: "true",
       OAUTH2_PROXY_PASS_USER_HEADERS: "true",
       OAUTH2_PROXY_REVERSE_PROXY: "true",
+      OAUTH2_PROXY_SESSION_COOKIE_MINIMAL: "true",
       // No skip auth regex needed for API because API traffic doesn't go through OAuth2 Proxy anymore!
     })
     .withLogConsumer((stream) => {

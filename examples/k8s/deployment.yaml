@@ -102,7 +102,7 @@ data:
         // Point to the Ingress path for the Auth Proxy
         configureAuthProxy({
             domains: ['api.external.com'],
-            proxyUrl: window.location.origin + '/auth-proxy' 
+            proxyUrl: window.location.origin + '/auth-proxy/' 
         });
       </script>
     </body>

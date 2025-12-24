@@ -59,6 +59,8 @@ function enableInterception() {
   if (!config) return;
 
   // Intercept XMLHttpRequest
+  const originalFetch = window.fetch;
+
   xhook.before(async function (request: any, callback: any) {
     if (shouldProxy(request.url)) {
       // Modify URL to point to proxy
@@ -88,8 +90,6 @@ function enableInterception() {
     callback();
   });
 
-  // Intercept fetch
-  const originalFetch = window.fetch;
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
     let url = input instanceof Request ? input.url : input.toString();
 
@@ -99,25 +99,59 @@ function enableInterception() {
 
       const token = await Promise.resolve(config!.getAuthToken!());
 
-      // Merge headers
-      const headers = new Headers(init?.headers || {});
+      // Prepare headers
+      // Start with headers from input (if Request) or init
+      let headers = new Headers();
+
+      if (input instanceof Request) {
+        new Headers(input.headers).forEach((v, k) => headers.set(k, v));
+      }
+      if (init?.headers) {
+        new Headers(init.headers).forEach((v, k) => headers.set(k, v));
+      }
+
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
       headers.set("X-Proxy-Target-Url", originalUrl);
 
-      const newInit = {
-        ...init,
-        headers,
-        credentials: "include" as RequestCredentials,
+      // Prepare init options
+      const newInit: RequestInit = {
+        credentials: "include", // Force include for cookie sharing
+        // Default values
+        method: "GET",
       };
 
-      // If input was a Request object, we need to clone it or create a new one with the new URL
+      // If input is a Request, copy its properties
       if (input instanceof Request) {
-        // We can't easily mutate a Request object's URL. We have to create a new one.
-        // But we can pass the new URL and the new init to fetch.
-        return originalFetch(url, newInit);
+        newInit.method = input.method;
+        newInit.body = input.body;
+        newInit.mode = input.mode;
+        newInit.cache = input.cache;
+        newInit.redirect = input.redirect;
+        newInit.referrer = input.referrer;
+        newInit.referrerPolicy = input.referrerPolicy;
+        newInit.integrity = input.integrity;
+        newInit.keepalive = input.keepalive;
+        newInit.signal = input.signal;
       }
+
+      // Override with explicit init if provided (shallow merge for known properties)
+      if (init) {
+        if (init.method) newInit.method = init.method;
+        if (init.body) newInit.body = init.body;
+        if (init.mode) newInit.mode = init.mode;
+        if (init.cache) newInit.cache = init.cache;
+        if (init.redirect) newInit.redirect = init.redirect;
+        if (init.referrer) newInit.referrer = init.referrer;
+        if (init.referrerPolicy) newInit.referrerPolicy = init.referrerPolicy;
+        if (init.integrity) newInit.integrity = init.integrity;
+        if (init.keepalive) newInit.keepalive = init.keepalive;
+        if (init.signal) newInit.signal = init.signal;
+        // Credentials handled above
+      }
+
+      newInit.headers = headers;
 
       return originalFetch(url, newInit);
     }

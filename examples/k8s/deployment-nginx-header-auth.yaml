@@ -1,0 +1,162 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-workload-header-auth
+  labels:
+    app: app-workload-header-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-workload-header-auth
+  template:
+    metadata:
+      labels:
+        app: app-workload-header-auth
+    spec:
+      volumes:
+        - name: html-volume
+          configMap:
+            name: spa-html
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+      containers:
+        # 1. Nginx (Main Application & Router)
+        # Listens on 0.0.0.0:80
+        # Serves clean SPA index.html for static paths
+        # Proxies /auth-proxy/ to the auth-proxy sidecar
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+
+        # 2. OAuth2 Proxy (Authentication Gateway)
+        # Protects the Pod. Handles Login/Logout.
+        # Listens on 0.0.0.0:4180
+        # Upstream: http://localhost:80 (Nginx)
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.4.0
+          ports:
+            - containerPort: 4180
+          env:
+            - name: OAUTH2_PROXY_HTTP_ADDRESS
+              value: "0.0.0.0:4180"
+            - name: OAUTH2_PROXY_UPSTREAMS
+              value: "http://localhost:80"
+            - name: OAUTH2_PROXY_PROVIDER
+              value: "oidc"
+            # IMPORTANT: Pass the ID Token as Authorization Header
+            - name: OAUTH2_PROXY_SET_AUTHORIZATION_HEADER
+              value: "true"
+            # Standard OIDC Config
+            - name: OAUTH2_PROXY_CLIENT_ID
+              value: "test-client"
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              value: "secret"
+            - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+              value: "http://keycloak/realms/test-realm"
+            - name: OAUTH2_PROXY_EMAIL_DOMAINS
+              value: "*"
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              value: "1234567890123456" 
+            - name: OAUTH2_PROXY_COOKIE_SECURE
+              value: "false" 
+            - name: OAUTH2_PROXY_SKIP_PROVIDER_BUTTON
+              value: "true"
+
+        # 3. AppMana Auth Proxy (API Gateway Sidecar)
+        # Validates JWT from Authorization Header (passed by OAuth2 Proxy -> Nginx -> Here)
+        # Listens on 0.0.0.0:3000
+        - name: auth-proxy
+          image: ghcr.io/appmana-public/auth-proxy-backend:latest
+          ports:
+            - containerPort: 3000
+          args:
+            - "--authorize"
+            - '{"issuer": "http://keycloak/realms/test-realm", "audience": "test-client", "domains": ["generativelanguage.googleapis.com"]}'
+            - "--allowed-domains"
+            - "generativelanguage.googleapis.com"
+            # Enable well-known backends (e.g. Gemini)
+            - "--well-known-all-backends"
+          env:
+            # We do NOT need to share the cookie secret if we rely on the header!
+            # But the proxy might still try to decrypt if a cookie is present.
+            # Here we demonstrate Header auth reliance.
+            - name: GEMINI_API_KEY
+              value: "AIza..." # Inject key here
+            - name: JWKS_CACHE_DURATION_MS
+              value: "3600000"
+
+---
+# Nginx Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+
+        # serve static files
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # proxy to auth-proxy sidecar
+        # OAuth2 Proxy passes Authorization header -> Nginx receives it -> Nginx proxies it to localhost:3000
+        location /auth-proxy/ {
+            proxy_pass http://localhost:3000/; # Trailing slash strips /auth-proxy/ prefix
+            
+            # Ensure headers are passed
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            
+            # Nginx passes Authorization header by default if present in request
+        }
+    }
+
+---
+# SPA HTML ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spa-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <h1>Header Auth SPA</h1>
+    <script type="module">
+        import { configureAuthProxy } from 'https://unpkg.com/@appmana-public/auth-proxy-frontend/dist/auth-proxy.global.js';
+        
+        // Point to the Nginx path for the Auth Proxy
+        // Since we are behind OAuth2 Proxy -> Nginx, the browser sees us at /
+        // and we proxy API calls to /auth-proxy/
+        configureAuthProxy({
+            domains: ['generativelanguage.googleapis.com'],
+            // IMPORTANT: ADD TRAILING SLASH to match Nginx location and prevent 301
+            proxyUrl: window.location.origin + '/auth-proxy/',
+            
+            // We do NOT need 'getAuthToken' logic to extract cookies manually
+            // because OAuth2 Proxy injects the Authorization header into the request *before* it hits Nginx.
+            // Wait, does OAuth2 Proxy inject headers into requests from the Browser?
+            // YES, if the request passes THROUGH OAuth2 Proxy.
+            // Browser -> OAuth2 Proxy (Injects Header) -> Nginx -> Auth Proxy.
+            // So the frontend code just sends a standard request.
+        });
+      </script>
+    </body>
+    </html>

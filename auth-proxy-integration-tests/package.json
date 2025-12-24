@@ -12,7 +12,8 @@
     "start:spa": "ts-node src/spa-server.ts",
     "start:gateway": "ts-node src/upstream-gateway.ts",
     "start:proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --policy ../../test-policy-integration.js --port 3000 --skip-verify",
-    "start:proxy:integration-keycloak-oauth2-proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --port 3001 --upstream http://127.0.0.1:9999 --policy ./test-policy-keycloak-oauth2-proxy.js"
+    "start:proxy:integration-keycloak-oauth2-proxy": "yarn build:dependencies && node ../auth-proxy-backend/build/index.js --port 3001 --upstream http://127.0.0.1:9999 --policy ./test-policy-keycloak-oauth2-proxy.js",
+    "test:header-auth": "yarn build:dependencies && playwright test src/tests/integration-header-auth.test.ts"
   },
   "devDependencies": {
     "@fastify/cors": "^9.0.1",
@@ -22,6 +23,7 @@
     "@playwright/test": "^1.41.2",
     "@types/express": "^5",
     "@types/node": "^20.11.24",
+    "dotenv": "^17.2.3",
     "esbuild": "^0.27.1",
     "fastify": "^4.26.1",
     "nock": "^14.0.10",

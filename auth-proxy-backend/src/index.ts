@@ -181,6 +181,9 @@ async function start() {
   fastify.addHook("onRequest", async (request, reply) => {
     if (request.method === "OPTIONS") return;
 
+    console.log(`[DEBUG] Incoming Request: ${request.method} ${request.url}`);
+    console.log(`[DEBUG] Incoming Headers:`, JSON.stringify(request.headers));
+
     const headerTargetUrl = request.headers["x-proxy-target-url"];
     const upstream = (argv.upstream as string) || "";
 
@@ -269,7 +272,7 @@ async function start() {
       try {
         const u = new URL(targetUrl);
         request.raw.url = u.pathname + u.search;
-      } catch (e) {}
+      } catch (e) { }
     }
   });
 

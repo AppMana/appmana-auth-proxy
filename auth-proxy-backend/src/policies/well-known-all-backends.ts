@@ -161,8 +161,10 @@ const services: WellKnownService[] = [
   {
     name: "Google Gemini",
     domains: ["generativelanguage.googleapis.com"],
-    envVars: ["GEMINI_API_KEY"],
-    inject: async () => ({ "x-goog-api-key": process.env.GEMINI_API_KEY! }),
+    envVars: ["GEMINI_API_KEY"], // Primary check
+    inject: async () => ({
+      "x-goog-api-key": process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY!,
+    }),
   },
   {
     name: "Replicate",
